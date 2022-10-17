@@ -51,9 +51,11 @@ async def stream(_, message: Message):
 
         file_name = get_file_name(audio)
         file_path = await converter.convert(
-            (await message.reply_to_message.download(file_name))
-            if not path.isfile(path.join("downloads", file_name)) else file_name
+            file_name
+            if path.isfile(path.join("downloads", file_name))
+            else await message.reply_to_message.download(file_name)
         )
+
     elif url:
         file_path = await converter.convert(youtube.download(url))
     else:
@@ -65,7 +67,6 @@ async def stream(_, message: Message):
         photo=f"{QUE_IMG}",
         reply_markup=keyboard,
         caption=f"#⃣  your requested song was added to **queue** at position {position} !\n\n⚡ __Powered by {bn} A.I__")
-        return await lel.delete()
     else:
         callsmusic.pytgcalls.join_group_call(message.chat.id, file_path)
         costumer = message.from_user.mention
@@ -74,4 +75,5 @@ async def stream(_, message: Message):
         reply_markup=keyboard,
         caption=f"💡 **now streaming** a song requested by {costumer} !\n\n⚡ __Powered by {bn} A.I__"
         )
-        return await lel.delete()
+
+    return await lel.delete()
