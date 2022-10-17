@@ -38,9 +38,9 @@ def cb_admin_check(func: Callable) -> Callable:
         admemes = a.get(cb.message.chat.id)
         if cb.from_user.id in admemes:
             return await func(client, cb)
-        else:
-            await cb.answer("you not allowed to do this!", show_alert=True)
-            return
+        await cb.answer("you not allowed to do this!", show_alert=True)
+        return
+
     return decorator                                                                       
                                           
                                                                                     
@@ -75,8 +75,7 @@ def changeImageSize(maxWidth, maxHeight, image):
     heightRatio = maxHeight / image.size[1]
     newWidth = int(widthRatio * image.size[0])
     newHeight = int(heightRatio * image.size[1])
-    newImage = image.resize((newWidth, newHeight))
-    return newImage
+    return image.resize((newWidth, newHeight))
 
 
 async def generate_cover(requested_by, title, views, duration, thumbnail):
@@ -96,7 +95,7 @@ async def generate_cover(requested_by, title, views, duration, thumbnail):
     img = Image.open("temp.png")
     draw = ImageDraw.Draw(img)
     font = ImageFont.truetype("etc/font.otf", 60)
-    draw.text((40, 550), f"Playing here....", (0, 0, 0), font=font)
+    draw.text((40, 550), "Playing here....", (0, 0, 0), font=font)
     draw.text((40, 630),
         f"{title}",
         (0, 0, 0),
@@ -115,12 +114,10 @@ async def playlist(client, message):
     queue = que.get(message.chat.id)
     if not queue:
         await message.reply_text("**nothing in streaming!**")
-    temp = []
-    for t in queue:
-        temp.append(t)
+    temp = list(queue)
     now_playing = temp[0][0]
     by = temp[0][1].mention(style="md")
-    msg = "**Now playing** on {}".format(message.chat.title)
+    msg = f"**Now playing** on {message.chat.title}"
     msg += "\n• "+ now_playing
     msg += "\n• Requested By "+by
     temp.pop(0)
@@ -137,39 +134,32 @@ async def playlist(client, message):
 # ============================= Settings =========================================
 def updated_stats(chat, queue, vol=100):
     if chat.id in callsmusic.pytgcalls.active_calls:
-        stats = "Pengaturan dari **{}**".format(chat.title)
+        stats = f"Pengaturan dari **{chat.title}**"
         if len(que) > 0:
             stats += "\n\n"
-            stats += "Volume: {}%\n".format(vol)
-            stats += "Lagu dalam antrian: `{}`\n".format(len(que))
-            stats += "Sedang memutar lagu: **{}**\n".format(queue[0][0])
-            stats += "Atas permintaan: {}".format(queue[0][1].mention)
+            stats += f"Volume: {vol}%\n"
+            stats += f"Lagu dalam antrian: `{len(que)}`\n"
+            stats += f"Sedang memutar lagu: **{queue[0][0]}**\n"
+            stats += f"Atas permintaan: {queue[0][1].mention}"
     else:
         stats = None
     return stats
 
 def r_ply(type_):
-    if type_ == "play":
-        pass
-    else:
-        pass
-    mar = InlineKeyboardMarkup(
+    return InlineKeyboardMarkup(
         [
             [
                 InlineKeyboardButton("⏹", "leave"),
                 InlineKeyboardButton("⏸", "puse"),
                 InlineKeyboardButton("▶️", "resume"),
-                InlineKeyboardButton("⏭", "skip")
+                InlineKeyboardButton("⏭", "skip"),
             ],
             [
                 InlineKeyboardButton("📖 PlayList", "playlist"),
             ],
-            [       
-                InlineKeyboardButton("🗑 Close", "cls")
-            ]        
+            [InlineKeyboardButton("🗑 Close", "cls")],
         ]
     )
-    return mar
 
 
 @Client.on_message(command(["player", f"player@{BOT_USERNAME}"]) & filters.group & ~filters.edited)
@@ -179,11 +169,10 @@ async def settings(client, message):
     if message.chat.id in callsmusic.pytgcalls.active_calls:
         playing = True
     queue = que.get(message.chat.id)
-    stats = updated_stats(message.chat, queue)
-    if stats:
+    if stats := updated_stats(message.chat, queue):
         if playing:
             await message.reply(stats, reply_markup=r_ply("pause"))
-            
+
         else:
             await message.reply(stats, reply_markup=r_ply("play"))
     else:
@@ -207,9 +196,9 @@ async def hfmm(_, message):
         return
     status = message.text.split(None, 1)[1]
     message.chat.id
-    if status == "ON" or status == "on" or status == "On":
+    if status in ["ON", "on", "On"]:
         lel = await message.reply("`processing...`")
-        if not message.chat.id in DISABLED_GROUPS:
+        if message.chat.id not in DISABLED_GROUPS:
             await lel.edit("**music player already activated.**")
             return
         DISABLED_GROUPS.remove(message.chat.id)
@@ -217,9 +206,9 @@ async def hfmm(_, message):
             f"✅ **music player has been activated in this chat.**\n\n💬 {message.chat.id}"
         )
 
-    elif status == "OFF" or status == "off" or status == "Off":
+    elif status in ["OFF", "off", "Off"]:
         lel = await message.reply("`processing...`")
-        
+
         if message.chat.id in DISABLED_GROUPS:
             await lel.edit("**music player already deactivated.**")
             return
@@ -235,7 +224,7 @@ async def hfmm(_, message):
 
 @Client.on_callback_query(filters.regex(pattern=r"^(playlist)$"))
 async def p_cb(b, cb):
-    global que    
+    global que
     que.get(cb.message.chat.id)
     type_ = cb.matches[0].group(1)
     cb.message.chat.id
@@ -245,12 +234,10 @@ async def p_cb(b, cb):
         queue = que.get(cb.message.chat.id)
         if not queue:
             await cb.message.edit("**nothing is playing ❗**")
-        temp = []
-        for t in queue:
-            temp.append(t)
+        temp = list(queue)
         now_playing = temp[0][0]
         by = temp[0][1].mention(style="md")
-        msg = "**Now playing** in {}".format(cb.message.chat.title)
+        msg = f"**Now playing** in {cb.message.chat.title}"
         msg += "\n• " + now_playing
         msg += "\n• Req by " + by
         temp.pop(0)
@@ -270,7 +257,7 @@ async def p_cb(b, cb):
 )
 @cb_admin_check
 async def m_cb(b, cb):
-    global que   
+    global que
     if (
         cb.message.chat.title.startswith("Channel Music: ")
         and chat.title[14:].isnumeric()
@@ -293,10 +280,10 @@ async def m_cb(b, cb):
             await cb.answer("assistant is not connected to voice chat!", show_alert=True)
         else:
             callsmusic.pytgcalls.pause_stream(chet_id)
-            
+
             await cb.answer("music paused!")
             await cb.message.edit(updated_stats(m_chat, qeue), reply_markup=r_ply("play"))
-                
+
     elif type_ == "play":       
         if (
             chet_id not in callsmusic.pytgcalls.active_calls
@@ -313,12 +300,10 @@ async def m_cb(b, cb):
         queue = que.get(cb.message.chat.id)
         if not queue:   
             await cb.message.edit("nothing in streaming!")
-        temp = []
-        for t in queue:
-            temp.append(t)
+        temp = list(queue)
         now_playing = temp[0][0]
         by = temp[0][1].mention(style="md")
-        msg = "**Lagu Yang Sedang dimainkan** di {}".format(cb.message.chat.title)
+        msg = f"**Lagu Yang Sedang dimainkan** di {cb.message.chat.title}"
         msg += "\n• "+ now_playing
         msg += "\n• Atas permintaan "+by
         temp.pop(0)
@@ -331,7 +316,7 @@ async def m_cb(b, cb):
                  msg += f"\n• {name}"
                  msg += f"\n• Atas permintaan {usr}\n"
         await cb.message.edit(msg)      
-                      
+
     elif type_ == "resume":     
         if (
             chet_id not in callsmusic.pytgcalls.active_calls
@@ -342,7 +327,7 @@ async def m_cb(b, cb):
         else:
             callsmusic.pytgcalls.resume_stream(chet_id)
             await cb.answer("music resumed!")
-     
+
     elif type_ == "puse":         
         if (
             chet_id not in callsmusic.pytgcalls.active_calls
@@ -352,7 +337,7 @@ async def m_cb(b, cb):
             await cb.answer("voice chat is not connected or already paused", show_alert=True)
         else:
             callsmusic.pytgcalls.pause_stream(chet_id)
-            
+
             await cb.answer("music paused!")
 
     elif type_ == "cls":          
@@ -369,11 +354,11 @@ async def m_cb(b, cb):
                     InlineKeyboardButton("⏸", "puse"),
                     InlineKeyboardButton("▶️", "resume"),
                     InlineKeyboardButton("⏭", "skip")
-                
+
                 ],
                 [
                     InlineKeyboardButton("📖 PlayList", "playlist"),
-                
+
                 ],
                 [       
                     InlineKeyboardButton("🗑 Close", "cls")

@@ -56,12 +56,10 @@ async def playlist(client, message):
     queue = que.get(lol)
     if not queue:
         await message.reply_text("player is not connected to voice chat")
-    temp = []
-    for t in queue:
-        temp.append(t)
+    temp = list(queue)
     now_playing = temp[0][0]
     by = temp[0][1].mention(style="md")
-    msg = "**Now Playing** in {}".format(lel.linked_chat.title)
+    msg = f"**Now Playing** in {lel.linked_chat.title}"
     msg += "\n- " + now_playing
     msg += "\n- Req by " + by
     temp.pop(0)
@@ -82,24 +80,20 @@ async def playlist(client, message):
 def updated_stats(chat, queue, vol=100):
     if chat.id in callsmusic.pytgcalls.active_calls:
         # if chat.id in active_chats:
-        stats = "Settings of **{}**".format(chat.title)
+        stats = f"Settings of **{chat.title}**"
         if len(que) > 0:
             stats += "\n\n"
-            stats += "Volume : {}%\n".format(vol)
-            stats += "Songs in queue : `{}`\n".format(len(que))
-            stats += "Now Playing : **{}**\n".format(queue[0][0])
-            stats += "Requested by : {}".format(queue[0][1].mention)
+            stats += f"Volume : {vol}%\n"
+            stats += f"Songs in queue : `{len(que)}`\n"
+            stats += f"Now Playing : **{queue[0][0]}**\n"
+            stats += f"Requested by : {queue[0][1].mention}"
     else:
         stats = None
     return stats
 
 
 def r_ply(type_):
-    if type_ == "play":
-        pass
-    else:
-        pass
-    mar = InlineKeyboardMarkup(
+    return InlineKeyboardMarkup(
         [
             [
                 InlineKeyboardButton("⏹", "cleave"),
@@ -113,7 +107,6 @@ def r_ply(type_):
             [InlineKeyboardButton("❌ Close", "ccls")],
         ]
     )
-    return mar
 
 
 @Client.on_message(filters.command(["channelcurrent","ccurrent"]) & filters.group & ~filters.edited)
@@ -126,8 +119,7 @@ async def ee(client, message):
       await message.reply("is this chat even linked")
       return
     queue = que.get(lol)
-    stats = updated_stats(conv, queue)
-    if stats:
+    if stats := updated_stats(conv, queue):
         await message.reply(stats)
     else:
         await message.reply("please turn on the voice chat first !")
@@ -136,7 +128,6 @@ async def ee(client, message):
 @Client.on_message(filters.command(["channelplayer","cplayer"]) & filters.group & ~filters.edited)
 @authorized_users_only
 async def settings(client, message):
-    playing = None
     try:
       lel = await client.get_chat(message.chat.id)
       lol = lel.linked_chat.id
@@ -145,8 +136,8 @@ async def settings(client, message):
       await message.reply("is this chat even linked")
       return
     queue = que.get(lol)
-    stats = updated_stats(conv, queue)
-    if stats:
+    if stats := updated_stats(conv, queue):
+        playing = None
         if playing:
             await message.reply(stats, reply_markup=r_ply("pause"))
 
@@ -164,7 +155,7 @@ async def p_cb(b, cb):
       lol = lel.linked_chat.id
       conv = lel.linked_chat
     except:
-      return    
+      return
     que.get(lol)
     type_ = cb.matches[0].group(1)
     cb.message.chat.id
@@ -174,12 +165,10 @@ async def p_cb(b, cb):
         queue = que.get(lol)
         if not queue:
             await cb.message.edit("player is not connected to voice chat !")
-        temp = []
-        for t in queue:
-            temp.append(t)
+        temp = list(queue)
         now_playing = temp[0][0]
         by = temp[0][1].mention(style="md")
-        msg = "**Now Playing** in {}".format(conv.title)
+        msg = f"**Now Playing** in {conv.title}"
         msg += "\n- " + now_playing
         msg += "\n- Req by " + by
         temp.pop(0)
@@ -217,7 +206,7 @@ async def m_cb(b, cb):
     type_ = cb.matches[0].group(1)
     cb.message.chat.id
     m_chat = cb.message.chat
-    
+
 
     the_data = cb.message.reply_markup.inline_keyboard[1][0].callback_data
     if type_ == "cpause":
@@ -249,12 +238,10 @@ async def m_cb(b, cb):
         queue = que.get(cb.message.chat.id)
         if not queue:
             await cb.message.edit("player is not connected to voice chat !")
-        temp = []
-        for t in queue:
-            temp.append(t)
+        temp = list(queue)
         now_playing = temp[0][0]
         by = temp[0][1].mention(style="md")
-        msg = "**Now Playing** in {}".format(cb.message.chat.title)
+        msg = f"**Now Playing** in {cb.message.chat.title}"
         msg += "\n- " + now_playing
         msg += "\n- Req by " + by
         temp.pop(0)
@@ -310,9 +297,7 @@ async def m_cb(b, cb):
     elif type_ == "cskip":
         if qeue:
             qeue.pop(0)
-        if chet_id not in callsmusic.pytgcalls.active_calls:
-            await cb.answer("chat is not connected!", show_alert=True)
-        else:
+        if chet_id in callsmusic.pytgcalls.active_calls:
             queues.task_done(chet_id)
 
             if queues.is_empty(chet_id):
@@ -329,17 +314,18 @@ async def m_cb(b, cb):
                     f"- Skipped track\n- Now playing **{qeue[0][0]}**"
                 )
 
-    else:
-        if chet_id in callsmusic.pytgcalls.active_calls:
-            try:
-                queues.clear(chet_id)
-            except QueueEmpty:
-                pass
-
-            callsmusic.pytgcalls.leave_group_call(chet_id)
-            await cb.message.edit("music player was disconnected from voice chat!")
         else:
             await cb.answer("chat is not connected!", show_alert=True)
+    elif chet_id in callsmusic.pytgcalls.active_calls:
+        try:
+            queues.clear(chet_id)
+        except QueueEmpty:
+            pass
+
+        callsmusic.pytgcalls.leave_group_call(chet_id)
+        await cb.message.edit("music player was disconnected from voice chat!")
+    else:
+        await cb.answer("chat is not connected!", show_alert=True)
 
 
 @Client.on_message(filters.command(["channelplay","cplay"])  & filters.group & ~filters.edited)
